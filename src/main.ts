@@ -9,10 +9,7 @@ async function bootstrap() {
   app.setGlobalPrefix("api/v1");
 
   app.enableCors({
-    origin: [
-      "http://localhost:3000",
-      "https://trtassistant.vercel.app/",
-    ],
+    origin: ["http://localhost:3000", "https://trtassistant.vercel.app/"],
     credentials: true,
   });
 
@@ -39,8 +36,8 @@ async function bootstrap() {
   }
 
   const port = process.env.PORT || 3001;
-  await app.listen(port);
-  console.log(`Server running on http://localhost:${port}/api/v1`);
+  await app.listen(port, "0.0.0.0");
+  console.log(`Server running on port ${port}`);
 }
 
 bootstrap();
