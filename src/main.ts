@@ -6,10 +6,16 @@ import {AppModule} from "./app.module";
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  // Health check TRUOC setGlobalPrefix
+  app.use("/health", (_req, res) => res.status(200).json({status: "ok"}));
+
   app.setGlobalPrefix("api/v1");
 
   app.enableCors({
-    origin: ["http://localhost:3000", "https://trtassistant.vercel.app/"],
+    origin: [
+      "http://localhost:3000",
+      "https://trtassistant.vercel.app", 
+    ],
     credentials: true,
   });
 
@@ -21,23 +27,8 @@ async function bootstrap() {
     }),
   );
 
-  if (process.env.NODE_ENV !== "production") {
-    const config = new DocumentBuilder()
-      .setTitle("AI IAM Assistant API")
-      .setDescription("API for AI document chatbot with access control")
-      .setVersion("1.0")
-      .addBearerAuth()
-      .build();
-    const document = SwaggerModule.createDocument(app, config);
-    SwaggerModule.setup("api/docs", app, document);
-    console.log(
-      `Swagger docs: http://localhost:${process.env.PORT || 3001}/api/docs`,
-    );
-  }
-  app.use("/health", (req, res) => res.status(200).json({status: "ok"}));
   const port = process.env.PORT || 3001;
   await app.listen(port, "0.0.0.0");
   console.log(`Server running on port ${port}`);
 }
-
 bootstrap();
