@@ -34,7 +34,7 @@ async function bootstrap() {
       `Swagger docs: http://localhost:${process.env.PORT || 3001}/api/docs`,
     );
   }
-
+  app.use("/health", (req, res) => res.status(200).json({status: "ok"}));
   const port = process.env.PORT || 3001;
   await app.listen(port, "0.0.0.0");
   console.log(`Server running on port ${port}`);
