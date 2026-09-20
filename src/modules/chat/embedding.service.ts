@@ -25,7 +25,7 @@ export class EmbeddingService {
   async embedText(text: string): Promise<number[]> {
     const response = await this.openai.embeddings.create({
       model:
-        this.config.get<string>("EMBED_MODEL") || "text-embedding-3-sma  ll",
+        this.config.get<string>("EMBED_MODEL") || "text-embedding-3-small",
       input: text.replace(/\n/g, " "),
     });
     return response.data[0].embedding;
