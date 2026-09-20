@@ -83,42 +83,41 @@ export class ChatService {
     const searchResults = await this.vectorSearch.search(question, userId, role, {
       topK: options.topK || 5,
       docIds: options.docIds,
+      minScore: 0.4,
     });
     const context = this.vectorSearch.buildContext(searchResults);
 
-    const systemPrompt = `Ban la AI Assistant giup nguoi dung tim hieu thong tin tu tai lieu.
-NGUYEN TAC:
--Chỉ sử dụng thông tin từ CONTEXT được cung cấp
--Không suy đoán, không tự thêm kiến thức bên ngoài.
--Mọi kết luận phải có cơ sở từ context.
--Nếu không tìm thấy thông tin trong CONTEXT
-Trả lời chính xác:
- "Tôi không tìm thấy thông tin này trong tài liệu."
--Không cố trả lời hoặc suy luận thêm.
+    const systemPrompt = `Bạn là AI Assistant giúp người dùng khai thác thông tin từ tài liệu nội bộ.
 
--Trả lời cùng ngôn ngữ với câu hỏi (Vietnamese / English).
--Giữ văn phong rõ ràng, dễ hiểu, đúng ngữ cảnh kỹ thuật nếu có.
--Trích dẫn nguồn (Citation)
--Luôn chỉ rõ phần thông tin được lấy từ đâu trong CONTEXT.
+## VAI TRÒ
+Bạn là trợ lý thông minh. Người dùng có thể hỏi theo nhiều cách khác nhau, không nhất thiết phải dùng đúng từ khóa trong tài liệu. Nhiệm vụ của bạn là:
+1. Hiểu ý định thực sự của câu hỏi
+2. Tìm thông tin phù hợp nhất trong CONTEXT
+3. Tổng hợp và trình bày rõ ràng
 
--Trích nguyên văn (nếu ngắn)
--Hoặc tóm tắt + dẫn nguồn
+## NGUYÊN TẮC TRẢ LỜI
 
-Ví dụ:
+**Khi CONTEXT có thông tin liên quan:**
+- Trả lời đầy đủ dựa trên nội dung trong CONTEXT
+- Được phép suy luận, tổng hợp, diễn giải từ nhiều đoạn trong CONTEXT
+- Không cần trích nguyên văn nếu không cần thiết — diễn đạt lại cho dễ hiểu
+- Trình bày có cấu trúc: dùng bullet points, số thứ tự, tiêu đề khi phù hợp
 
-Theo tài liệu: "..."
+**Khi CONTEXT có thông tin một phần:**
+- Trả lời phần có thể trả lời được
+- Chỉ rõ phần nào không có trong tài liệu
+- Đừng từ chối toàn bộ câu hỏi nếu có thể trả lời một phần
 
--Ưu tiên độ chính xác hơn độ đầy đủ
--Nếu thông tin không chắc chắn hoặc không rõ → không trả lời thêm.
--Không “fill cho đủ”.
--Trả lời có cấu trúc (nếu phù hợp)
--Sử dụng bullet points / step-by-step khi giải thích.
+**Khi CONTEXT thực sự không có thông tin:**
+- Chỉ khi chắc chắn 100% context không liên quan, trả lời:
+  "Tôi không tìm thấy thông tin về vấn đề này trong tài liệu được cung cấp."
+- Không suy đoán, không thêm kiến thức ngoài tài liệu
 
--Giữ ngắn gọn nhưng đủ ý
+## VỀ NGÔN NGỮ
+- Trả lời cùng ngôn ngữ với câu hỏi (Tiếng Việt / English)
+- Văn phong rõ ràng, tự nhiên, phù hợp ngữ cảnh kỹ thuật nếu cần
 
--Tập trung trực tiếp vào câu hỏi.
-
-CONTEXT:
+## CONTEXT (Nội dung tài liệu liên quan):
 ${context}`;
 
     const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
@@ -151,12 +150,18 @@ ${context}`;
         }
       }
 
-      const sources = searchResults.map(r => ({
-        docId: r.docId, docName: r.docName, page: r.page,
-        score: Math.round(r.score * 100) / 100,
-      }));
-      res.write(`data: ${JSON.stringify({ type: "sources", sources })}\n\n`);
+      // Chi gui ve sources co score cao (thuc su lien quan)
+      const relevantSources = searchResults
+        .filter(r => r.score >= 0.3)
+        .map(r => ({
+          docId:   r.docId,
+          docName: r.docName,
+          page:    r.page,
+          score:   Math.round(r.score * 100) / 100,
+        }));
+      res.write(`data: ${JSON.stringify({ type: "sources", sources: relevantSources })}\n\n`);
       res.write(`data: ${JSON.stringify({ type: "done" })}\n\n`);
+
     } catch (err) {
       this.logger.error(`OpenAI error: ${err.message}`);
       res.write(`data: ${JSON.stringify({ type: "error", message: err.message })}\n\n`);

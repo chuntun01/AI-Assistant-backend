@@ -7,8 +7,10 @@ import { AuthController } from "./auth.controller";
 import { AuthService } from "./auth.service";
 import { RoleService } from "./role.service";
 import { JwtStrategy } from "./jwt.strategy";
+import { GoogleStrategy } from "./google.strategy";
 import { User, UserSchema } from "./user.schema";
 import { Role, RoleSchema } from "./role.schema";
+import { EmailService } from "../../common/services/email.service";
 
 @Module({
   imports: [
@@ -27,7 +29,7 @@ import { Role, RoleSchema } from "./role.schema";
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, RoleService, JwtStrategy],
+  providers: [AuthService, RoleService, JwtStrategy, GoogleStrategy, EmailService],
   exports: [AuthService, RoleService, JwtModule, PassportModule],
 })
 export class AuthModule {}
